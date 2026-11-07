@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { shiftCost } from "../../shared/game";
-import type {
-  CarColor,
-  Gear,
-  LobbyView,
-  Phase,
-  PlayerView,
-} from "../../shared/protocol";
-import { getPlayerId, saveColor } from "../app/identity";
+import type { Gear, LobbyView, Phase, PlayerView } from "../../shared/protocol";
+import { getPlayerId } from "../app/identity";
 import { GearBadge } from "../components/GearBadge";
 import { GearShifter } from "../components/GearShifter";
 import { LockedInCard } from "../components/LockedInCard";
@@ -82,11 +76,6 @@ function Lobby({
     else onExit(null);
   };
 
-  const changeColor = (color: CarColor) => {
-    saveColor(color);
-    send({ type: "setColor", color });
-  };
-
   const remove = (player: PlayerView) => {
     if (window.confirm(`Remove ${player.name} from the lobby?`)) {
       send({ type: "removePlayer", playerId: player.id });
@@ -120,11 +109,7 @@ function Lobby({
           <Revealed lobby={lobby} me={me} send={send} />
         )}
 
-        <PlayerList
-          lobby={lobby}
-          onRemove={remove}
-          onChangeColor={changeColor}
-        />
+        <PlayerList lobby={lobby} onRemove={remove} />
 
         {lobby.phase !== "lobby" && (
           <details style={styles.details}>

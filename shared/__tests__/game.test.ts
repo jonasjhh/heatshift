@@ -7,7 +7,6 @@ import {
   joinLobby,
   removePlayer,
   shiftCost,
-  setColor,
   spunOut,
   startRound,
   takenColors,
@@ -180,24 +179,19 @@ describe("car colours", () => {
     expect(new Set(state.players.map((p) => p.color)).size).toBe(MAX_PLAYERS);
   });
 
-  it("only lets you change to a colour nobody else has", () => {
+  it("reports the colours other players have", () => {
     const state = createLobby("ABCD");
     joinLobby(state, "a", "A", "black");
     joinLobby(state, "b", "B", "white");
-    expect(setColor(state, "b", "black")).toMatch(/already/);
-    expect(setColor(state, "b", "green")).toBeNull();
-    expect(setColor(state, "b", "green")).toBeNull();
-    expect(takenColors(state, "a")).toEqual(["green"]);
+    expect(takenColors(state, "a")).toEqual(["white"]);
+    expect(takenColors(state)).toEqual(["black", "white"]);
   });
 
-  it("keeps your colour when rejoining, unless you ask for a free one", () => {
+  it("keeps your colour when rejoining, whatever colour you ask for", () => {
     const state = createLobby("ABCD");
     joinLobby(state, "a", "A", "red");
-    joinLobby(state, "b", "B", "blue");
-    joinLobby(state, "a", "A", "blue");
-    expect(state.players[0].color).toBe("red");
     joinLobby(state, "a", "A", "purple");
-    expect(state.players[0].color).toBe("purple");
+    expect(state.players[0].color).toBe("red");
   });
 
   it("assigns colours to lobbies saved before colours existed", () => {

@@ -7,7 +7,6 @@ import {
   isMember,
   joinLobby,
   removePlayer,
-  setColor,
   spunOut,
   startRound,
   takenColors,
@@ -122,11 +121,6 @@ export class Lobby extends DurableObject<Env> {
 
     let error: string | null = null;
     switch (message.type) {
-      case "setColor":
-        error = isCarColor(message.color)
-          ? setColor(state, playerId, message.color)
-          : "Unknown colour.";
-        break;
       case "startRound":
         error = startRound(state, playerId);
         break;

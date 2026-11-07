@@ -80,38 +80,22 @@ export function joinLobby(
 
   const existing = state.players.find((p) => p.id === playerId);
   if (existing) {
-    // Rejoining (refresh, phone woke up): keep gear and round, update name
-    // and take the preferred colour if it's still free.
+    // Rejoining (refresh, phone woke up): keep gear, round and colour. The
+    // colour is chosen once, when first joining, and can't change after.
     existing.name = name;
-    if (preferredColor && isColorFree(state, preferredColor, playerId)) {
-      existing.color = preferredColor;
-    }
     return null;
   }
   if (state.players.length >= MAX_PLAYERS) {
     return `This lobby is full (${MAX_PLAYERS} players).`;
   }
-  // A taken colour isn't an error: you get the first free one and can
-  // change it in the lobby.
+  // A taken colour isn't an error: you get the first free one. (The join
+  // screen already greys out taken colours, so this only matters when two
+  // players join with the same colour at the same moment.)
   const color =
     preferredColor && isColorFree(state, preferredColor, playerId)
       ? preferredColor
       : firstFreeColor(state);
   state.players.push({ id: playerId, name, color, gear: STARTING_GEAR });
-  return null;
-}
-
-export function setColor(
-  state: LobbyState,
-  playerId: string,
-  color: CarColor,
-): Outcome {
-  const player = state.players.find((p) => p.id === playerId);
-  if (!player) return "You're not in this lobby.";
-  if (!isColorFree(state, color, playerId)) {
-    return "Another player already has that colour.";
-  }
-  player.color = color;
   return null;
 }
 

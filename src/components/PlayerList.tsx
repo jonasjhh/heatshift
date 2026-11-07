@@ -1,27 +1,18 @@
-import { useState } from "react";
 import {
   MAX_PLAYERS,
-  type CarColor,
   type LobbyView,
   type PlayerView,
 } from "../../shared/protocol";
-import { ColorPicker } from "./ColorPicker";
 import { colors, panel } from "../ui/theme";
 import { GearBadge } from "./GearBadge";
 
 interface Props {
   lobby: LobbyView;
   onRemove: (player: PlayerView) => void;
-  onChangeColor: (color: CarColor) => void;
 }
 
-export function PlayerList({ lobby, onRemove, onChangeColor }: Props) {
+export function PlayerList({ lobby, onRemove }: Props) {
   const choosing = lobby.phase === "choosing";
-  const [editingColor, setEditingColor] = useState(false);
-  const me = lobby.players.find((p) => p.id === lobby.you);
-  const othersColors = lobby.players
-    .filter((p) => p.id !== lobby.you)
-    .map((p) => p.color);
 
   return (
     <section style={panel}>
@@ -34,17 +25,7 @@ export function PlayerList({ lobby, onRemove, onChangeColor }: Props) {
       <ul style={styles.list}>
         {lobby.players.map((player) => (
           <li key={player.id} style={styles.row}>
-            {player.id === lobby.you ? (
-              <button
-                style={styles.dotButton}
-                aria-label="Change your car colour"
-                onClick={() => setEditingColor((v) => !v)}
-              >
-                <GearBadge gear={player.gear} color={player.color} />
-              </button>
-            ) : (
-              <GearBadge gear={player.gear} color={player.color} />
-            )}
+            <GearBadge gear={player.gear} color={player.color} />
             <span style={styles.name}>
               {player.name}
               {player.id === lobby.you && (
@@ -69,27 +50,6 @@ export function PlayerList({ lobby, onRemove, onChangeColor }: Props) {
           </li>
         ))}
       </ul>
-      {me && (
-        <div style={styles.colorEdit}>
-          {editingColor ? (
-            <ColorPicker
-              value={me.color}
-              taken={othersColors}
-              onChange={(color) => {
-                onChangeColor(color);
-                setEditingColor(false);
-              }}
-            />
-          ) : (
-            <button
-              style={styles.changeColor}
-              onClick={() => setEditingColor(true)}
-            >
-              Change my colour
-            </button>
-          )}
-        </div>
-      )}
     </section>
   );
 }
@@ -137,23 +97,10 @@ const styles: Record<string, React.CSSProperties> = {
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
   },
-  dotButton: {
-    background: "none",
-    border: "none",
-    padding: 0,
-    display: "inline-flex",
-  },
   colorEdit: {
     marginTop: "0.6rem",
     paddingTop: "0.6rem",
     borderTop: `1px solid ${colors.raised}`,
-  },
-  changeColor: {
-    background: "none",
-    border: "none",
-    color: colors.accent,
-    fontSize: "0.9rem",
-    padding: 0,
   },
   status: { fontSize: "0.85rem", whiteSpace: "nowrap" },
   remove: {

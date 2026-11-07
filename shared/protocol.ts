@@ -69,7 +69,6 @@ export interface LobbyView {
 
 export type ClientMessage =
   | { type: "join"; playerId: string; name: string; color?: CarColor }
-  | { type: "setColor"; color: CarColor }
   | { type: "startRound" }
   | { type: "chooseGear"; gear: Gear }
   | { type: "clearChoice" }
