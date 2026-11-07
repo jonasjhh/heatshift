@@ -1,0 +1,25 @@
+name = "heatshift"
+main = "worker/index.ts"
+compatibility_date = "2026-08-24"
+
+# Serves the Vite build output; the Worker runs first for every request so
+# it can handle /api/* (lobby creation and WebSocket upgrades) and hand
+# everything else to the static assets, with an SPA fallback for /join/CODE.
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = true
+not_found_handling = "single-page-application"
+
+# One Durable Object per lobby: it owns the lobby's players, the current
+# round and every live WebSocket connected to it.
+[[durable_objects.bindings]]
+name = "LOBBY"
+class_name = "Lobby"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Lobby"]
+
+[dev]
+port = 8788
