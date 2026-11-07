@@ -1,4 +1,8 @@
+# Heatshift's own Worker. Nothing here is shared with kinetic or any other
+# app: its own script name, workers.dev URL, Durable Object namespace and
+# storage. It has no routes, KV, D1 or R2 bindings borrowed from elsewhere.
 name = "heatshift"
+workers_dev = true
 main = "worker/index.ts"
 compatibility_date = "2026-08-24"
 
@@ -21,5 +25,7 @@ class_name = "Lobby"
 tag = "v1"
 new_sqlite_classes = ["Lobby"]
 
+# Different local ports from kinetic (8788/9229) so both can run side by side.
 [dev]
-port = 8788
+port = 8789
+inspector_port = 9230

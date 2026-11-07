@@ -45,22 +45,43 @@ the last player has picked, all the choices are shown on every phone at once.
 ## Getting started
 
     pnpm install
-    pnpm worker:dev   # terminal 1: Worker + Durable Objects on :8788
+    pnpm worker:dev   # terminal 1: Worker + Durable Objects on :8789
     pnpm dev          # terminal 2: Vite on :5175, proxies /api (incl. WebSockets)
 
 To try it with the built app only, run `pnpm build && pnpm worker:dev` and
-open http://localhost:8788.
+open http://localhost:8789.
 
 ## Checks
 
     pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
+
+## Infrastructure
+
+Heatshift has its own infrastructure and shares none with kinetic or any
+other app:
+
+- **Cloudflare Worker** `heatshift`, served at `heatshift.<account>.workers.dev`
+  (no custom domain, no routes on another app's zone).
+- **Durable Object namespace** `Lobby`, bound only to this Worker. All lobby
+  state lives in its storage, and there is no shared KV, D1 or R2.
+- **Deploy pipeline**: this repo's own `.github/workflows/deploy.yml`, using
+  this repo's own Actions secrets.
+- **Local dev ports**: Worker on 8789 (inspector 9230) and Vite on 5175, so it
+  can run alongside kinetic (8788/9229/5174).
+
+For full isolation at the account level, create a Cloudflare API token just
+for heatshift: _Edit Cloudflare Workers_ permissions, limited to the account
+it deploys to. Don't reuse kinetic's token. You can also deploy to a
+separate Cloudflare account; just set that account's ID as
+`CLOUDFLARE_ACCOUNT_ID`.
 
 ## Deploying
 
     pnpm worker:deploy
 
 Pushing to `main` also runs `.github/workflows/deploy.yml`. It needs the
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets set on this repo.
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets set on this repo
+(GitHub Actions secrets are per repo, so kinetic's are not visible here).
 The app is served at `heatshift.<account>.workers.dev`. The first deploy
 creates the `Lobby` Durable Object class through the `v1` migration in
 `wrangler.toml`.

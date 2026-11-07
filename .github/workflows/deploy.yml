@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: cloudflare-deploy
+  group: heatshift-deploy
   cancel-in-progress: false
 
 jobs:
