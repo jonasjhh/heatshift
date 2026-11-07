@@ -188,8 +188,8 @@ function Choosing({
       <div style={styles.centered}>
         <h2 style={styles.h2}>Round {lobby.round}: shift gears</h2>
         <p style={{ ...help, margin: 0 }}>
-          You're in <GearBadge gear={me.gear} size={22} /> — pick your new gear
-          in secret.
+          You're in <GearBadge gear={me.gear} color={me.color} size={22} /> —
+          pick your new gear in secret.
         </p>
       </div>
 

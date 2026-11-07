@@ -5,7 +5,6 @@ import {
   type LobbyView,
   type PlayerView,
 } from "../../shared/protocol";
-import { CarDot } from "./CarDot";
 import { ColorPicker } from "./ColorPicker";
 import { colors, panel } from "../ui/theme";
 import { GearBadge } from "./GearBadge";
@@ -41,12 +40,11 @@ export function PlayerList({ lobby, onRemove, onChangeColor }: Props) {
                 aria-label="Change your car colour"
                 onClick={() => setEditingColor((v) => !v)}
               >
-                <CarDot color={player.color} size={22} />
+                <GearBadge gear={player.gear} color={player.color} />
               </button>
             ) : (
-              <CarDot color={player.color} size={22} />
+              <GearBadge gear={player.gear} color={player.color} />
             )}
-            <GearBadge gear={player.gear} />
             <span style={styles.name}>
               {player.name}
               {player.id === lobby.you && (
