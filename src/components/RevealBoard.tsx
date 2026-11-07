@@ -1,5 +1,6 @@
 import type { RevealView } from "../../shared/protocol";
-import { colors, gearColors } from "../ui/theme";
+import { carColors, colors, gearColors } from "../ui/theme";
+import { CarDot } from "./CarDot";
 
 interface Props {
   reveal: RevealView;
@@ -19,11 +20,12 @@ export function RevealBoard({ reveal, you }: Props) {
             className="reveal-card"
             style={{
               ...styles.card,
-              borderColor: mine ? colors.text : color,
+              borderColor: carColors[result.color].fill,
+              boxShadow: mine ? `0 0 0 2px ${colors.text}` : "none",
             }}
           >
             <span style={styles.name}>
-              {result.name}
+              <CarDot color={result.color} size={12} /> {result.name}
               {mine && " (you)"}
             </span>
             <span style={{ ...styles.gear, color }}>{result.to}</span>
@@ -61,7 +63,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: "0.2rem",
     padding: "0.75rem 0.5rem",
     borderRadius: 16,
-    border: "2px solid",
+    border: "3px solid",
     background: colors.panel,
     textAlign: "center",
   },

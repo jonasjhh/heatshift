@@ -2,9 +2,11 @@
 // unit-tested and run unchanged inside the Durable Object.
 
 import {
+  CAR_COLORS,
   GEARS,
   MAX_PLAYERS,
   normalizeName,
+  type CarColor,
   type Gear,
   type LobbyView,
   type Phase,
@@ -14,6 +16,7 @@ import {
 export interface PlayerState {
   id: string;
   name: string;
+  color: CarColor;
   gear: Gear;
 }
 
@@ -69,6 +72,7 @@ export function joinLobby(
   state: LobbyState,
   playerId: string,
   rawName: string,
+  preferredColor?: CarColor,
 ): Outcome {
   const name = normalizeName(rawName);
   if (!name) return "Enter a name to join.";
@@ -76,15 +80,68 @@ export function joinLobby(
 
   const existing = state.players.find((p) => p.id === playerId);
   if (existing) {
-    // Rejoining (refresh, phone woke up): keep gear and round, update name.
+    // Rejoining (refresh, phone woke up): keep gear and round, update name
+    // and take the preferred colour if it's still free.
     existing.name = name;
+    if (preferredColor && isColorFree(state, preferredColor, playerId)) {
+      existing.color = preferredColor;
+    }
     return null;
   }
   if (state.players.length >= MAX_PLAYERS) {
     return `This lobby is full (${MAX_PLAYERS} players).`;
   }
-  state.players.push({ id: playerId, name, gear: STARTING_GEAR });
+  // A taken colour isn't an error: you get the first free one and can
+  // change it in the lobby.
+  const color =
+    preferredColor && isColorFree(state, preferredColor, playerId)
+      ? preferredColor
+      : firstFreeColor(state);
+  state.players.push({ id: playerId, name, color, gear: STARTING_GEAR });
   return null;
+}
+
+export function setColor(
+  state: LobbyState,
+  playerId: string,
+  color: CarColor,
+): Outcome {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) return "You're not in this lobby.";
+  if (!isColorFree(state, color, playerId)) {
+    return "Another player already has that colour.";
+  }
+  player.color = color;
+  return null;
+}
+
+export function takenColors(
+  state: LobbyState,
+  exceptPlayerId?: string,
+): CarColor[] {
+  return state.players
+    .filter((p) => p.id !== exceptPlayerId)
+    .map((p) => p.color);
+}
+
+function isColorFree(state: LobbyState, color: CarColor, playerId: string) {
+  return !takenColors(state, playerId).includes(color);
+}
+
+// There are as many colours as seats, so a joining player always gets one.
+function firstFreeColor(state: LobbyState): CarColor {
+  const taken = takenColors(state);
+  return CAR_COLORS.find((c) => !taken.includes(c)) ?? CAR_COLORS[0];
+}
+
+// Lobbies stored before colours existed get one per player.
+export function upgradeLobby(state: LobbyState): LobbyState {
+  for (const player of state.players) {
+    if (!player.color) {
+      player.color = firstFreeColor(state);
+    }
+  }
+  return state;
 }
 
 export function removePlayer(state: LobbyState, playerId: string): void {
@@ -156,6 +213,7 @@ function revealIfComplete(state: LobbyState): void {
     const result = {
       playerId: id,
       name: player.name,
+      color: player.color,
       from: player.gear,
       to,
       heatCost: shiftCost(player.gear, to) ?? 0,
@@ -189,6 +247,7 @@ export function viewFor(
     players: state.players.map((p) => ({
       id: p.id,
       name: p.name,
+      color: p.color,
       gear: p.gear,
       connected: connected.has(p.id),
       inRound: state.inRound.includes(p.id),

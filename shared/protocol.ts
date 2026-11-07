@@ -10,11 +10,31 @@ export const LOBBY_CODE_ALPHABET = "ABCDEFGHJKMNPQRTUVWXYZ2346789";
 export type Gear = 1 | 2 | 3 | 4;
 export const GEARS: readonly Gear[] = [1, 2, 3, 4];
 
+// The six car colours of the base game, plus two extras so all 8 players
+// in a full lobby can have their own colour.
+export const CAR_COLORS = [
+  "red",
+  "blue",
+  "green",
+  "yellow",
+  "black",
+  "white",
+  "purple",
+  "orange",
+] as const;
+export type CarColor = (typeof CAR_COLORS)[number];
+export const BASE_GAME_COLORS: readonly CarColor[] = CAR_COLORS.slice(0, 6);
+
+export function isCarColor(value: unknown): value is CarColor {
+  return CAR_COLORS.includes(value as CarColor);
+}
+
 export type Phase = "lobby" | "choosing" | "revealed";
 
 export interface ShiftResult {
   playerId: string;
   name: string;
+  color: CarColor;
   from: Gear;
   to: Gear;
   heatCost: number;
@@ -28,6 +48,7 @@ export interface RevealView {
 export interface PlayerView {
   id: string;
   name: string;
+  color: CarColor;
   gear: Gear;
   connected: boolean;
   // Whether this player takes part in the round being chosen right now.
@@ -47,7 +68,8 @@ export interface LobbyView {
 }
 
 export type ClientMessage =
-  | { type: "join"; playerId: string; name: string }
+  | { type: "join"; playerId: string; name: string; color?: CarColor }
+  | { type: "setColor"; color: CarColor }
   | { type: "startRound" }
   | { type: "chooseGear"; gear: Gear }
   | { type: "clearChoice" }
@@ -59,6 +81,14 @@ export type ServerMessage =
   | { type: "state"; lobby: LobbyView }
   | { type: "error"; message: string }
   | { type: "left" };
+
+// Answer to GET /api/lobbies/:code, used before joining to grey out the
+// colours other players already have.
+export interface LobbySummary {
+  code: string;
+  playerCount: number;
+  takenColors: CarColor[];
+}
 
 // Sent as plain text so the Durable Object can answer it without waking up.
 export const PING = "ping";

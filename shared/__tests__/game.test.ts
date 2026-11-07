@@ -7,8 +7,11 @@ import {
   joinLobby,
   removePlayer,
   shiftCost,
+  setColor,
   spunOut,
   startRound,
+  takenColors,
+  upgradeLobby,
   viewFor,
   type LobbyState,
 } from "../game";
@@ -79,9 +82,23 @@ describe("a round", () => {
     expect(state.lastReveal).toEqual({
       round: 1,
       results: [
-        { playerId: "a", name: "a", from: 1, to: 2, heatCost: 0 },
-        { playerId: "b", name: "b", from: 1, to: 3, heatCost: 1 },
-        { playerId: "c", name: "c", from: 1, to: 1, heatCost: 0 },
+        { playerId: "a", name: "a", color: "red", from: 1, to: 2, heatCost: 0 },
+        {
+          playerId: "b",
+          name: "b",
+          color: "blue",
+          from: 1,
+          to: 3,
+          heatCost: 1,
+        },
+        {
+          playerId: "c",
+          name: "c",
+          color: "green",
+          from: 1,
+          to: 1,
+          heatCost: 0,
+        },
       ],
     });
     expect([gearOf(state, "a"), gearOf(state, "b")]).toEqual([2, 3]);
@@ -141,5 +158,55 @@ describe("a round", () => {
     chooseGear(state, "a", 4);
     expect(spunOut(state, "a")).toBeNull();
     expect(gearOf(state, "a")).toBe(1);
+  });
+});
+
+describe("car colours", () => {
+  it("gives each player their preferred colour if free, else the first free one", () => {
+    const state = createLobby("ABCD");
+    joinLobby(state, "a", "A", "yellow");
+    joinLobby(state, "b", "B", "yellow");
+    joinLobby(state, "c", "C");
+    expect(state.players.map((p) => p.color)).toEqual([
+      "yellow",
+      "red",
+      "blue",
+    ]);
+  });
+
+  it("gives all 8 players a distinct colour", () => {
+    const names = Array.from({ length: MAX_PLAYERS }, (_, i) => `p${i}`);
+    const state = lobbyWith(...names);
+    expect(new Set(state.players.map((p) => p.color)).size).toBe(MAX_PLAYERS);
+  });
+
+  it("only lets you change to a colour nobody else has", () => {
+    const state = createLobby("ABCD");
+    joinLobby(state, "a", "A", "black");
+    joinLobby(state, "b", "B", "white");
+    expect(setColor(state, "b", "black")).toMatch(/already/);
+    expect(setColor(state, "b", "green")).toBeNull();
+    expect(setColor(state, "b", "green")).toBeNull();
+    expect(takenColors(state, "a")).toEqual(["green"]);
+  });
+
+  it("keeps your colour when rejoining, unless you ask for a free one", () => {
+    const state = createLobby("ABCD");
+    joinLobby(state, "a", "A", "red");
+    joinLobby(state, "b", "B", "blue");
+    joinLobby(state, "a", "A", "blue");
+    expect(state.players[0].color).toBe("red");
+    joinLobby(state, "a", "A", "purple");
+    expect(state.players[0].color).toBe("purple");
+  });
+
+  it("assigns colours to lobbies saved before colours existed", () => {
+    const state = createLobby("ABCD");
+    state.players = [
+      { id: "a", name: "A", gear: 1 },
+      { id: "b", name: "B", gear: 2 },
+    ] as unknown as LobbyState["players"];
+    upgradeLobby(state);
+    expect(state.players.map((p) => p.color)).toEqual(["red", "blue"]);
   });
 });

@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { Gear } from "../../shared/protocol";
+import type { CarColor, Gear } from "../../shared/protocol";
 
 export const colors = {
   background: "#16110e",
@@ -20,6 +20,21 @@ export const gearColors: Record<Gear, string> = {
   2: "#5fd38d",
   3: "#ffc23d",
   4: "#ff5a36",
+};
+
+// Car colours as swatches. `ink` is the text colour that reads on top.
+export const carColors: Record<
+  CarColor,
+  { label: string; fill: string; ink: string }
+> = {
+  red: { label: "Red", fill: "#d93030", ink: "#fff" },
+  blue: { label: "Blue", fill: "#2f6fd8", ink: "#fff" },
+  green: { label: "Green", fill: "#2f9e52", ink: "#fff" },
+  yellow: { label: "Yellow", fill: "#f2c42e", ink: "#16110e" },
+  black: { label: "Black", fill: "#1b1b1b", ink: "#fff" },
+  white: { label: "White", fill: "#f4f1ec", ink: "#16110e" },
+  purple: { label: "Purple", fill: "#8a46d6", ink: "#fff" },
+  orange: { label: "Orange", fill: "#f07a1e", ink: "#16110e" },
 };
 
 export const page: CSSProperties = {

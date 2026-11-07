@@ -6,6 +6,7 @@ import {
   type LobbyView,
   type ServerMessage,
 } from "../../shared/protocol";
+import { getSavedColor } from "../app/identity";
 import { checkLobby, lobbySocketUrl } from "./api";
 
 export type ConnectionStatus =
@@ -58,10 +59,10 @@ export function useLobby(
       if (stopped || checking || socketRef.current) return;
 
       checking = true;
-      const check = await checkLobby(code);
+      const check = await checkLobby(code, playerId);
       checking = false;
       if (stopped) return;
-      if (check === "missing") {
+      if (check.status === "missing") {
         stopped = true;
         setStatus("missing");
         return;
@@ -72,7 +73,16 @@ export function useLobby(
 
       ws.onopen = () => {
         attempt = 0;
-        ws.send(JSON.stringify({ type: "join", playerId, name }));
+        ws.send(
+          JSON.stringify({
+            type: "join",
+            playerId,
+            name,
+            // Read at every (re)join so a colour changed in the lobby
+            // sticks after a reconnect.
+            color: getSavedColor() ?? undefined,
+          } satisfies ClientMessage),
+        );
         pingTimer = window.setInterval(() => ws.send(PING), PING_INTERVAL_MS);
       };
 

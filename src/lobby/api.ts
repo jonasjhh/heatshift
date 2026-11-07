@@ -1,3 +1,5 @@
+import type { LobbySummary } from "../../shared/protocol";
+
 export async function createLobby(): Promise<string> {
   const response = await fetch("/api/lobbies", { method: "POST" });
   if (!response.ok) throw new Error("Couldn't create a lobby. Try again.");
@@ -5,16 +7,31 @@ export async function createLobby(): Promise<string> {
   return code;
 }
 
-export type LobbyCheck = "exists" | "missing" | "unreachable";
+export type LobbyCheck =
+  | { status: "exists"; summary: LobbySummary }
+  | { status: "missing" }
+  | { status: "unreachable" };
 
-export async function checkLobby(code: string): Promise<LobbyCheck> {
+export async function checkLobby(
+  code: string,
+  playerId: string,
+): Promise<LobbyCheck> {
   try {
-    const response = await fetch(`/api/lobbies/${code}`);
-    if (response.ok) return "exists";
-    if (response.status === 404 || response.status === 400) return "missing";
-    return "unreachable";
+    const response = await fetch(
+      `/api/lobbies/${code}?player=${encodeURIComponent(playerId)}`,
+    );
+    if (response.ok) {
+      return {
+        status: "exists",
+        summary: (await response.json()) as LobbySummary,
+      };
+    }
+    if (response.status === 404 || response.status === 400) {
+      return { status: "missing" };
+    }
+    return { status: "unreachable" };
   } catch {
-    return "unreachable";
+    return { status: "unreachable" };
   }
 }
 

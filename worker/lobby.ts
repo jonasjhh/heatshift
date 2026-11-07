@@ -7,15 +7,20 @@ import {
   isMember,
   joinLobby,
   removePlayer,
+  setColor,
   spunOut,
   startRound,
+  takenColors,
+  upgradeLobby,
   viewFor,
   type LobbyState,
 } from "../shared/game";
 import {
   PING,
   PONG,
+  isCarColor,
   type ClientMessage,
+  type LobbySummary,
   type ServerMessage,
 } from "../shared/protocol";
 
@@ -43,7 +48,8 @@ export class Lobby extends DurableObject<Env> {
       new WebSocketRequestResponsePair(PING, PONG),
     );
     void this.ctx.blockConcurrencyWhile(async () => {
-      this.state = (await this.ctx.storage.get<LobbyState>(STATE_KEY)) ?? null;
+      const stored = await this.ctx.storage.get<LobbyState>(STATE_KEY);
+      this.state = stored ? upgradeLobby(stored) : null;
     });
   }
 
@@ -56,8 +62,16 @@ export class Lobby extends DurableObject<Env> {
     return true;
   }
 
-  async exists(): Promise<boolean> {
-    return this.state !== null;
+  // What a player needs to see before joining. Their own colour (if they
+  // are rejoining) doesn't count as taken.
+  async summary(playerId: string | null): Promise<LobbySummary | null> {
+    const state = this.state;
+    if (!state) return null;
+    return {
+      code: state.code,
+      playerCount: state.players.length,
+      takenColors: takenColors(state, playerId ?? undefined),
+    };
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -88,7 +102,12 @@ export class Lobby extends DurableObject<Env> {
     const attachment = ws.deserializeAttachment() as Attachment;
 
     if (message.type === "join") {
-      const error = joinLobby(state, String(message.playerId), message.name);
+      const error = joinLobby(
+        state,
+        String(message.playerId),
+        String(message.name ?? ""),
+        isCarColor(message.color) ? message.color : undefined,
+      );
       if (error) return send(ws, { type: "error", message: error });
       ws.serializeAttachment({
         playerId: message.playerId,
@@ -103,6 +122,11 @@ export class Lobby extends DurableObject<Env> {
 
     let error: string | null = null;
     switch (message.type) {
+      case "setColor":
+        error = isCarColor(message.color)
+          ? setColor(state, playerId, message.color)
+          : "Unknown colour.";
+        break;
       case "startRound":
         error = startRound(state, playerId);
         break;

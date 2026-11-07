@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   LOBBY_CODE_LENGTH,
   MAX_NAME_LENGTH,
@@ -6,8 +6,15 @@ import {
   isValidLobbyCode,
   normalizeLobbyCode,
   normalizeName,
+  type CarColor,
 } from "../../shared/protocol";
-import { getLastLobby, getSavedName } from "../app/identity";
+import {
+  getLastLobby,
+  getPlayerId,
+  getSavedColor,
+  getSavedName,
+} from "../app/identity";
+import { ColorPicker } from "../components/ColorPicker";
 import { checkLobby, createLobby } from "../lobby/api";
 import {
   colors,
@@ -25,19 +32,38 @@ interface Props {
   // Code from a shared link or QR code: then only a name is needed.
   invitedCode: string | null;
   notice: string | null;
-  onEnter: (code: string, name: string) => void;
+  onEnter: (code: string, name: string, color: CarColor | null) => void;
 }
 
 export function HomeScreen({ invitedCode, notice, onEnter }: Props) {
   const [name, setName] = useState(getSavedName);
   const [code, setCode] = useState(invitedCode ?? "");
   const [invited, setInvited] = useState(invitedCode !== null);
+  const [color, setColor] = useState<CarColor | null>(getSavedColor);
+  const [taken, setTaken] = useState<CarColor[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(notice);
   const lastLobby = getLastLobby();
 
   const cleanName = normalizeName(name);
   const cleanCode = normalizeLobbyCode(code);
+
+  // Once a full code is known, grey out the colours already in that lobby.
+  useEffect(() => {
+    setTaken([]);
+    if (!isValidLobbyCode(cleanCode)) return;
+    let cancelled = false;
+    void checkLobby(cleanCode, getPlayerId()).then((check) => {
+      if (!cancelled && check.status === "exists") {
+        setTaken(check.summary.takenColors);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [cleanCode]);
+
+  const colorTaken = color !== null && taken.includes(color);
 
   const requireName = () => {
     if (cleanName) return true;
@@ -53,11 +79,15 @@ export function HomeScreen({ invitedCode, notice, onEnter }: Props) {
     }
     setBusy(true);
     setError(null);
-    const check = await checkLobby(target);
+    const check = await checkLobby(target, getPlayerId());
     setBusy(false);
-    if (check === "missing") setError(`No lobby with code ${target}.`);
-    else if (check === "unreachable") setError("Can't reach the server.");
-    else onEnter(target, cleanName);
+    if (check.status === "missing") setError(`No lobby with code ${target}.`);
+    else if (check.status === "unreachable") {
+      setError("Can't reach the server.");
+    } else if (color && check.summary.takenColors.includes(color)) {
+      setTaken(check.summary.takenColors);
+      setError("Someone in that lobby has your colour. Pick another.");
+    } else onEnter(target, cleanName, color);
   };
 
   const create = async () => {
@@ -65,7 +95,7 @@ export function HomeScreen({ invitedCode, notice, onEnter }: Props) {
     setBusy(true);
     setError(null);
     try {
-      onEnter(await createLobby(), cleanName);
+      onEnter(await createLobby(), cleanName, color);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setBusy(false);
@@ -100,6 +130,18 @@ export function HomeScreen({ invitedCode, notice, onEnter }: Props) {
             onChange={(e) => setName(e.target.value)}
           />
         </label>
+
+        <div style={label}>
+          Your car colour
+          <ColorPicker
+            value={colorTaken ? null : color}
+            taken={taken}
+            onChange={(c) => {
+              setColor(c);
+              setError(null);
+            }}
+          />
+        </div>
 
         {invited ? (
           <section style={{ ...panel, ...styles.invite }}>

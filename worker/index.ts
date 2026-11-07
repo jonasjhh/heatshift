@@ -27,9 +27,8 @@ app.get("/api/lobbies/:code", async (c) => {
   const code = normalizeLobbyCode(c.req.param("code"));
   if (!isValidLobbyCode(code)) return c.json({ error: "Invalid code" }, 400);
   const stub = c.env.LOBBY.get(c.env.LOBBY.idFromName(code));
-  return (await stub.exists())
-    ? c.json({ code })
-    : c.json({ error: "Lobby not found" }, 404);
+  const summary = await stub.summary(c.req.query("player") ?? null);
+  return summary ? c.json(summary) : c.json({ error: "Lobby not found" }, 404);
 });
 
 app.get("/api/lobbies/:code/ws", async (c) => {

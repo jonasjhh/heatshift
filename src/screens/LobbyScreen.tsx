@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import type { LobbyView, Phase, PlayerView } from "../../shared/protocol";
-import { getPlayerId } from "../app/identity";
+import { shiftCost } from "../../shared/game";
+import type {
+  CarColor,
+  Gear,
+  LobbyView,
+  Phase,
+  PlayerView,
+} from "../../shared/protocol";
+import { getPlayerId, saveColor } from "../app/identity";
 import { GearBadge } from "../components/GearBadge";
-import { GearPicker } from "../components/GearPicker";
+import { GearShifter } from "../components/GearShifter";
 import { LockedInCard } from "../components/LockedInCard";
 import { InvitePanel } from "../components/InvitePanel";
 import { PlayerList } from "../components/PlayerList";
@@ -75,6 +82,11 @@ function Lobby({
     else onExit(null);
   };
 
+  const changeColor = (color: CarColor) => {
+    saveColor(color);
+    send({ type: "setColor", color });
+  };
+
   const remove = (player: PlayerView) => {
     if (window.confirm(`Remove ${player.name} from the lobby?`)) {
       send({ type: "removePlayer", playerId: player.id });
@@ -108,7 +120,11 @@ function Lobby({
           <Revealed lobby={lobby} me={me} send={send} />
         )}
 
-        <PlayerList lobby={lobby} onRemove={remove} />
+        <PlayerList
+          lobby={lobby}
+          onRemove={remove}
+          onChangeColor={changeColor}
+        />
 
         {lobby.phase !== "lobby" && (
           <details style={styles.details}>
@@ -179,14 +195,11 @@ function Choosing({
 
       {lobby.yourChoice === null ? (
         <>
-          <GearPicker
+          <ShiftChooser
+            key={lobby.round}
             current={me.gear}
-            selected={null}
-            onSelect={(gear) => send({ type: "chooseGear", gear })}
+            onLockIn={(gear) => send({ type: "chooseGear", gear })}
           />
-          <p style={{ ...help, textAlign: "center", margin: 0 }}>
-            Shifting 1 gear is free; skipping a gear costs 1 Heat.
-          </p>
         </>
       ) : (
         <>
@@ -202,6 +215,31 @@ function Choosing({
         </>
       )}
     </section>
+  );
+}
+
+// Move the stick with taps, then lock in. Nothing is sent until you lock
+// in, so changing your mind on the shifter is free.
+function ShiftChooser({
+  current,
+  onLockIn,
+}: {
+  current: Gear;
+  onLockIn: (gear: Gear) => void;
+}) {
+  const [gear, setGear] = useState<Gear>(current);
+  const cost = shiftCost(current, gear) ?? 0;
+  return (
+    <>
+      <GearShifter current={current} selected={gear} onSelect={setGear} />
+      <button style={primaryButton} onClick={() => onLockIn(gear)}>
+        Lock in gear {gear}
+        {cost > 0 && ` (+${cost} Heat)`}
+      </button>
+      <p style={{ ...help, textAlign: "center", margin: 0 }}>
+        Shifting 1 gear is free; skipping a gear costs 1 Heat.
+      </p>
+    </>
   );
 }
 

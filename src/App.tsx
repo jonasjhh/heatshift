@@ -1,5 +1,11 @@
 import { useCallback, useState } from "react";
-import { getSavedName, saveLastLobby, saveName } from "./app/identity";
+import type { CarColor } from "../shared/protocol";
+import {
+  getSavedName,
+  saveColor,
+  saveLastLobby,
+  saveName,
+} from "./app/identity";
 import { InstallPrompt } from "./app/InstallPrompt";
 import { codeFromLocation, setLocationCode } from "./app/route";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -19,13 +25,17 @@ export function App() {
   });
   const [notice, setNotice] = useState<string | null>(null);
 
-  const enter = useCallback((code: string, name: string) => {
-    saveName(name);
-    saveLastLobby(code);
-    setLocationCode(code);
-    setNotice(null);
-    setSession({ code, name });
-  }, []);
+  const enter = useCallback(
+    (code: string, name: string, color: CarColor | null) => {
+      saveName(name);
+      if (color) saveColor(color);
+      saveLastLobby(code);
+      setLocationCode(code);
+      setNotice(null);
+      setSession({ code, name });
+    },
+    [],
+  );
 
   const exit = useCallback((message: string | null) => {
     saveLastLobby(null);
