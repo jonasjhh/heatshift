@@ -3,6 +3,7 @@ import type { LobbyView, Phase, PlayerView } from "../../shared/protocol";
 import { getPlayerId } from "../app/identity";
 import { GearBadge } from "../components/GearBadge";
 import { GearPicker } from "../components/GearPicker";
+import { LockedInCard } from "../components/LockedInCard";
 import { InvitePanel } from "../components/InvitePanel";
 import { PlayerList } from "../components/PlayerList";
 import { RevealBoard } from "../components/RevealBoard";
@@ -176,26 +177,29 @@ function Choosing({
         </p>
       </div>
 
-      <GearPicker
-        current={me.gear}
-        selected={lobby.yourChoice}
-        onSelect={(gear) => send({ type: "chooseGear", gear })}
-      />
-
-      <p style={{ ...help, textAlign: "center", margin: 0 }}>
-        {lobby.yourChoice === null
-          ? "Shifting 1 gear is free; skipping a gear costs 1 Heat."
-          : others.length > 0
-            ? `Locked in. Waiting for ${others.map((p) => p.name).join(", ")}. Tap another gear to change.`
-            : "Locked in."}
-      </p>
-      {lobby.yourChoice !== null && (
-        <button
-          style={{ ...linkButton, alignSelf: "center" }}
-          onClick={() => send({ type: "clearChoice" })}
-        >
-          Undo my pick
-        </button>
+      {lobby.yourChoice === null ? (
+        <>
+          <GearPicker
+            current={me.gear}
+            selected={null}
+            onSelect={(gear) => send({ type: "chooseGear", gear })}
+          />
+          <p style={{ ...help, textAlign: "center", margin: 0 }}>
+            Shifting 1 gear is free; skipping a gear costs 1 Heat.
+          </p>
+        </>
+      ) : (
+        <>
+          <LockedInCard
+            choice={lobby.yourChoice}
+            onChange={() => send({ type: "clearChoice" })}
+          />
+          <p style={{ ...help, textAlign: "center", margin: 0 }}>
+            {others.length > 0
+              ? `Waiting for ${others.map((p) => p.name).join(", ")}.`
+              : "Revealing…"}
+          </p>
+        </>
       )}
     </section>
   );
